@@ -182,7 +182,7 @@ def run(args, train_dataloader, val_dataloader, _gaze_network, smpl, mesh_sample
                 )
 
             #if(iteration%int((max_iter+10)/3)==0):
-            if(iteration*5==0):
+            if(iteration*3==0):
 
                 checkpoint_dir = save_checkpoint(_gaze_network, args, epoch, iteration)
                 print("save trained model at ", checkpoint_dir)
@@ -223,7 +223,7 @@ def run_validate(args, val_dataloader, gaze_network, criterion_cos, smpl,mesh_sa
             direction = gaze_network(batch_imgs, smpl, mesh_sampler)
             #print(direction.shape)
 
-            loss = criterion(direction,gaze_dir).mean()
+            loss = criterion(direction,gaze_dir[:,(args.n_frames-1)//2]).mean()
 
             # update logs
             mse.update(loss.item(), batch_size)
