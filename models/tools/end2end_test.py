@@ -61,10 +61,13 @@ class CosLoss(torch.nn.Module):
         l2 = torch.linalg.norm(outputs, ord=2, axis=1)
         outputs = outputs/l2[:,None]
         outputs = outputs.reshape(-1, outputs.shape[-1])
+        l2 = torch.linalg.norm(targets, ord=2, axis=1)
+        targets = targets/l2[:,None]
         targets = targets.reshape(-1, targets.shape[-1])
         cos =  torch.sum(outputs*targets,dim=-1)
-        cos[cos > 1] = 1
-        cos[cos < -1] = -1
+        #cos[cos != cos] = 0
+        cos[cos > 999/1000] = 999/1000
+        cos[cos < -999/1000] = -999/1000
         rad = torch.acos(cos)
         loss = torch.rad2deg(rad)#0.5*(1-cos)#criterion(pred_gaze,gaze_dir)
 
@@ -116,7 +119,7 @@ def run_validate(args, val_dataloader, _gaze_network, criterion_mse, smpl,mesh_s
             direction = _gaze_network(batch_imgs, smpl, mesh_sampler)
             #print(direction.shape)
 
-            loss = criterion_mse(direction,gaze_dir).mean()
+            loss = criterion_mse(direction,gaze_dir[:,(args.n_frames-1)//2]).mean()
 
             # update logs
             log_losses.update(loss.item(), batch_size)
@@ -175,6 +178,7 @@ def parse_args():
                         help="random seed for initialization.")
     parser.add_argument('--dataset', type=str, nargs='*', default="", 
                         help="use test scene.")
+    parser.add_argument("--n_frames", type=int, default=7)
 
     args = parser.parse_args()
     return args
@@ -338,13 +342,13 @@ def main(args):
     if args.dataset:
         exp_names = args.dataset
 
-    dset = create_gafa_dataset(exp_names=exp_names, test=True)
+    dset = create_gafa_dataset(exp_names=exp_names, n_frames=args.n_frames)
     #dset = create_gafa_dataset(exp_names=['data20','data23','data25'], root_dir='../MakeDataset', test=True, augumented=False)
     #dset = create_gafa_dataset(exp_names=exp_names, root_dir='data/GoTK', test=True, augumented=False)
 
     test_dataloader = DataLoader(
         #dset, batch_size=1, shuffle=True, num_workers=1, pin_memory=True
-        dset, batch_size=72, shuffle=True, num_workers=1, pin_memory=True
+        dset, batch_size=32, shuffle=True, num_workers=1, pin_memory=True
     )
 
     run_test(args, test_dataloader, _gaze_network, mesh_smpl, mesh_sampler)
