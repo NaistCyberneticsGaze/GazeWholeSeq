@@ -18,7 +18,7 @@ class GAZEFROMBODY(torch.nn.Module):
         self.lstm2 = torch.nn.LSTM(input_size=3, hidden_size=20, batch_first=True)
         self.fc2 = torch.nn.Linear(20, 3)  # 予測値1つ
 
-    def forward(self, images, smpl, mesh_sampler, is_train=False, render=False):
+    def forward(self, images, smpl, mesh_sampler, is_train=False):
 
         direction = []
         mdirection = []
@@ -38,8 +38,10 @@ class GAZEFROMBODY(torch.nn.Module):
         mx = mx[:,-1,:]  # 最後のタイムステップの outputを全結合層に通す
         mx = self.fc2(mx)
 
-        return x, mx
-
+        if is_train == True:
+            return x, mx
+        if is_train == False:
+            return x#, pred_vertices, pred_camera
 
 class BertLayer(torch.nn.Module):
     def __init__(self, args, bert):
@@ -78,7 +80,7 @@ class BertLayer(torch.nn.Module):
         return pred_3d_joints - pred_torso[:, None, :]
 
 
-    def forward(self, images, smpl, mesh_sampler, is_train=False, render=False):
+    def forward(self, images, smpl, mesh_sampler, is_train=False):
         batch_size = images.size(0)
         self.bert.eval()
         self.metromodule.eval()
